@@ -93,7 +93,10 @@ export class NLPEngine {
      *
      * Returns the analyzer directory path.
      */
-    compileAnalyzer(analyzerFolder: string, inputTextPath?: string, kbOnly: boolean = false): string {
+    compileAnalyzer(analyzerFolder: string, inputTextPath?: string, kbOnly: boolean = false, analyzerOnly: boolean = false): string {
+        if (kbOnly && analyzerOnly) {
+            throw new Error("compileAnalyzer: kbOnly and analyzerOnly are mutually exclusive");
+        }
         const analyzerPath = path.join(this.analyzersDir, analyzerFolder);
         let resolvedInput = inputTextPath;
         if (!resolvedInput) {
@@ -116,7 +119,7 @@ export class NLPEngine {
         }
 
         const executablePath = path.join(this.engineDir, "nlp.exe");
-        const flag = kbOnly ? "-COMPILEKB" : "-COMPILE";
+        const flag = kbOnly ? "-COMPILEKB" : (analyzerOnly ? "-COMPILEANA" : "-COMPILE");
         const args = [flag, "-ANA", analyzerPath, "-WORK", this.engineDir, resolvedInput];
 
         const result = child_process.spawnSync(executablePath, args, {
@@ -135,7 +138,7 @@ export class NLPEngine {
      * build, and stage the resulting library into <analyzer>/bin/
      * under every name the engine's load paths look for (run.<ext> /
      * runu.<ext> / kb.<ext> / kbu.<ext>, or just kb.<ext> / kbu.<ext>
-     * for kbOnly).
+     * for kbOnly, or just run.<ext> / runu.<ext> for analyzerOnly).
      *
      * After this returns, analyzeFile(..., compiled=true) will load
      * the staged libraries instead of running interpreted.
@@ -147,7 +150,10 @@ export class NLPEngine {
      *
      * Returns the analyzer's bin/ directory path.
      */
-    compileLocal(analyzerFolder: string, inputTextPath: string, kbOnly: boolean = false, ubuntu: string = "ubuntu-latest"): string {
+    compileLocal(analyzerFolder: string, inputTextPath: string, kbOnly: boolean = false, analyzerOnly: boolean = false, ubuntu: string = "ubuntu-latest"): string {
+        if (kbOnly && analyzerOnly) {
+            throw new Error("compileLocal: kbOnly and analyzerOnly are mutually exclusive");
+        }
         const analyzerPath = path.join(this.analyzersDir, analyzerFolder);
         const isWindows = process.platform === 'win32';
         const scriptName = isWindows ? 'compile-analyzer.ps1' : 'compile-analyzer.sh';
@@ -164,6 +170,8 @@ export class NLPEngine {
             args = ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath];
             if (kbOnly) {
                 args.push('-KbOnly');
+            } else if (analyzerOnly) {
+                args.push('-AnalyzerOnly');
             }
             args.push(analyzerPath, inputTextPath);
         } else {
@@ -171,6 +179,8 @@ export class NLPEngine {
             args = [scriptPath];
             if (kbOnly) {
                 args.push('--kb-only');
+            } else if (analyzerOnly) {
+                args.push('--analyzer-only');
             }
             args.push(analyzerPath, inputTextPath);
             // Only the Linux script accepts the ubuntu variant arg.

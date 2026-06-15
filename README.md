@@ -40,17 +40,17 @@ Run the named analyzer over the input text. When `compiled` is `true`, passes `-
 
 Convenience for analyzing an in-memory string — writes it to the analyzer's input dir then calls `analyzeFile`.
 
-### `compileAnalyzer(analyzerFolder, inputTextPath?, kbOnly=false): string`
+### `compileAnalyzer(analyzerFolder, inputTextPath?, kbOnly=false, analyzerOnly=false): string`
 
-Shell out to `nlp.exe -COMPILE` (or `-COMPILEKB` if `kbOnly` is true) to generate the analyzer's C++ source trees under `<analyzer>/run/*.cpp` and `<analyzer>/kb/*.cpp` (or just `kb/*.cpp` for KB-only). The trees still need to be built into shared libraries before `analyzeFile(..., compiled=true)` will work — see `compileLocal()`.
+Shell out to `nlp.exe -COMPILE` (or `-COMPILEKB` if `kbOnly` is true, or `-COMPILEANA` if `analyzerOnly` is true) to generate the analyzer's C++ source trees: `-COMPILE` emits both `<analyzer>/run/*.cpp` and `<analyzer>/kb/*.cpp`; `-COMPILEKB` emits just `kb/*.cpp`; `-COMPILEANA` emits just `run/*.cpp`. Use `analyzerOnly` when only the rules changed and the KB is already compiled (`kbOnly` and `analyzerOnly` are mutually exclusive). The trees still need to be built into shared libraries before `analyzeFile(..., compiled=true)` will work — see `compileLocal()`.
 
 If `inputTextPath` is omitted, the function picks the first text file it finds under the analyzer's `input/` directory. The engine requires an input file at compile time but doesn't actually analyze it for `-COMPILE`.
 
 Returns the analyzer directory path.
 
-### `compileLocal(analyzerFolder, inputTextPath, kbOnly=false, ubuntu="ubuntu-latest"): string`
+### `compileLocal(analyzerFolder, inputTextPath, kbOnly=false, analyzerOnly=false, ubuntu="ubuntu-latest"): string`
 
-Drive the platform's `scripts/compile-analyzer.{sh,ps1}` to do the full local build end-to-end: `-COMPILE` step, cmake configure + build, and stage the resulting library into `<analyzer>/bin/` under every name the engine's load paths look for (`run.<ext>` / `runu.<ext>` / `kb.<ext>` / `kbu.<ext>`, or just `kb.<ext>` / `kbu.<ext>` for `kbOnly`).
+Drive the platform's `scripts/compile-analyzer.{sh,ps1}` to do the full local build end-to-end: `-COMPILE` step, cmake configure + build, and stage the resulting library into `<analyzer>/bin/` under every name the engine's load paths look for (`run.<ext>` / `runu.<ext>` / `kb.<ext>` / `kbu.<ext>`, or just `kb.<ext>` / `kbu.<ext>` for `kbOnly`, or just `run.<ext>` / `runu.<ext>` for `analyzerOnly`).
 
 After `compileLocal()` returns, `analyzeFile(..., compiled=true)` will load the staged libraries instead of running interpreted.
 
