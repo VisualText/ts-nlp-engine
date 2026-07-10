@@ -19,6 +19,44 @@ export class NLPEngine {
         return path.join(this.analyzerPath(analyzerFolder), "kb", "user");
     }
 
+    /**
+     * Place a JSON file in the analyzer's kb/user directory so its json2kbb
+     * pass converts it to a KBB on the next run. The file is copied to
+     * <analyzer>/kb/user/<name>.json (name defaults to the source file's own
+     * name; a .json extension is appended if missing). Returns the
+     * destination path.
+     */
+    putJsonFile(analyzerFolder: string, jsonPath: string, name?: string): string {
+        if (!fs.existsSync(jsonPath) || !fs.statSync(jsonPath).isFile()) {
+            throw new Error(`JSON file not found: ${jsonPath}`);
+        }
+        JSON.parse(fs.readFileSync(jsonPath, "utf-8")); // validate it is JSON
+        let target = name || path.basename(jsonPath);
+        if (!target.toLowerCase().endsWith(".json")) {
+            target += ".json";
+        }
+        const kbdir = this.kbPath(analyzerFolder);
+        fs.mkdirSync(kbdir, { recursive: true });
+        const dest = path.join(kbdir, target);
+        fs.copyFileSync(jsonPath, dest);
+        return dest;
+    }
+
+    /**
+     * Write a JSON-serializable value to the analyzer's kb/user directory so
+     * its json2kbb pass converts it to a KBB on the next run. Serialized to
+     * <analyzer>/kb/user/<name>.json (a .json extension is appended if
+     * missing). Returns the destination path.
+     */
+    putJsonObject(analyzerFolder: string, obj: any, name: string): string {
+        const target = name.toLowerCase().endsWith(".json") ? name : name + ".json";
+        const kbdir = this.kbPath(analyzerFolder);
+        fs.mkdirSync(kbdir, { recursive: true });
+        const dest = path.join(kbdir, target);
+        fs.writeFileSync(dest, JSON.stringify(obj, null, 2), "utf-8");
+        return dest;
+    }
+
     specPath(analyzerFolder: string): string {
         return path.join(this.analyzerPath(analyzerFolder), "spec");
     }
